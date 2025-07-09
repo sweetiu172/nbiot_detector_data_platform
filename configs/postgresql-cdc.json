@@ -1,0 +1,15 @@
+{
+  "name": "iot_data-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "offline-ds",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "mysecretpassword",
+    "database.dbname": "iot_db",
+    "database.server.name": "iot",
+    "table.include.list": "public.iot_raw_data",
+    "plugin.name": "pgoutput",
+    "slot.name": "iot_raw_data_slot"
+  }
+}

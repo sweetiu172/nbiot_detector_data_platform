@@ -6,4 +6,4 @@ postgres:
 
 simulation:
   # Average time in seconds between generating new records
-  interval_seconds: 1.0
+  interval_seconds: 10
