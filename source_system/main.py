@@ -21,14 +21,12 @@ def run_source_simulator(config, stats_df):
     sim_config = config['simulation']
     table_name = pg_config['table_name']
 
-    # --- THIS IS THE CORRECTED LOGIC ---
     # Handle potential NaN values in the stats file by replacing them with 0.
     # This prevents the script from generating NaN, which becomes NULL in the database.
     print("Handling potential missing values in feature statistics...")
     feature_names = stats_df.index.tolist()
     mean_values = stats_df['mean'].fillna(0)
     std_values = stats_df['std'].fillna(0)
-    # --- END OF CORRECTION ---
 
     try:
         print(f"Connecting to PostgreSQL at {pg_config['db_url'].split('@')[-1]}...")
