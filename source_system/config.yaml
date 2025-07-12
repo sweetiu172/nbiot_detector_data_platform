@@ -1,0 +1,9 @@
+# config.yaml
+postgres:
+  # Format: "postgresql://user:password@host:port/dbname"
+  db_url: "postgresql://postgres:mysecretpassword@localhost:5432/iot_db"
+  table_name: "iot_raw_data"
+
+simulation:
+  # Average time in seconds between generating new records
+  interval_seconds: 10

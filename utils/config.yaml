@@ -1,0 +1,11 @@
+source_data:
+  base_path: ../data/
+  num_files: 90
+
+datalake:
+  endpoint: localhost:9000
+  bucket_name: iot-time-series
+  folder_name: raw_data
+  processed_path: processed
+  access_key: minio_access_key
+  secret_key: minio_secret_key
