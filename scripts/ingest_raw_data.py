@@ -6,26 +6,29 @@ from pyspark.sql.functions import lit
 def run_job(spark, date_str):
     """
     Reads daily raw CSVs from the landing zone, transforms them,
-    and appends them to the main processed Delta table.
+    and appends them to the main processed Delta table, partitioned by date.
     """
-    # Construct the input path based on the date partition
     input_path = f"s3a://landing/dt={date_str}/*/*.csv"
     print(f"Reading raw data from: {input_path}")
-    
-    # Read the partitioned CSV data for all devices for the given day
+
     df = spark.read.option("header", "true").option("inferSchema", "true").csv(input_path)
-    
-    # Add the date column to the DataFrame for partitioning in the final table
+
+    # Add the date column to the DataFrame to be used for partitioning
     df = df.withColumn("dt", lit(date_str))
     print("Added date column for partitioning.")
-    
-    # Define the path to the main processed Delta table
+
     output_path = "s3a://processed/iot_botnet_data"
-    
-    # Use 'append' mode to add the new day's data to the existing table
-    print(f"Appending data to Delta table at: {output_path}")
-    df.write.format("delta").mode("append").save(output_path)
-    
+
+    print(f"Appending data to partitioned Delta table at: {output_path}")
+    # --- KEY CHANGE: Add the .partitionBy("dt") command ---
+    (df.write
+       .format("delta")
+       .mode("append")
+       .option("mergeSchema", "true") # Good practice when appending to partitioned tables
+       .partitionBy("dt")
+       .save(output_path)
+    )
+
     print("Ingestion and transformation complete.")
 
 if __name__ == "__main__":

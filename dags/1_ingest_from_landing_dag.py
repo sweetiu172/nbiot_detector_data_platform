@@ -2,41 +2,34 @@
 from __future__ import annotations
 import pendulum
 from airflow.models.dag import DAG
-from airflow.providers.docker.operators.docker import DockerOperator
-
-# NOTE: Your docker-compose project name is used in the network_mode.
-# By default it's the name of the folder your docker-compose.yml is in.
-# Replace 'end-to-end-mlops' if your folder has a different name.
-NETWORK_NAME = "end-to-end-mlops_default"
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+from airflow.models.variable import Variable
 
 with DAG(
     dag_id="1_ingest_from_landing_local",
-    start_date=pendulum.datetime(2025, 7, 12, tz="UTC"),
+    start_date=pendulum.datetime(2025, 7, 10, tz="UTC"),
     catchup=False,
     schedule="@daily",
-    tags=["iot_botnet", "ingestion", "local-docker"],
+    tags=["iot_botnet", "ingestion", "local"],
 ) as dag:
-    # This command will be executed inside the new container
-    spark_submit_command = """
-        spark-submit \
-            --master spark://spark-master:7077 \
-            --packages io.delta:delta-spark_2.12:3.2.0,org.apache.hadoop:hadoop-aws:3.3.4 \
-            --conf spark.hadoop.fs.s3a.endpoint=http://minio:9000 \
-            --conf spark.hadoop.fs.s3a.access.key=minio_access_key \
-            --conf spark.hadoop.fs.s3a.secret.key=minio_secret_key \
-            --conf spark.hadoop.fs.s3a.path.style.access=true \
-            --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
-            --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
-            --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
-            /home/jovyan/scripts/ingest_raw_data.py \
-            --date {{ ds }}
-    """
+    # Read configuration from Airflow Variables (which are set by env vars)
+    spark_conf = {
+        "spark.hadoop.fs.s3a.endpoint": Variable.get("minio_endpoint"),
+        "spark.hadoop.fs.s3a.access.key": Variable.get("minio_access_key"),
+        "spark.hadoop.fs.s3a.secret.key": Variable.get("minio_secret_key"),
+        "spark.hadoop.fs.s3a.path.style.access": "true",
+        "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
+        "spark.eventLog.enabled": "false",
+        "spark.jars": "/opt/spark/extra-jars/*",
+    }
 
-    ingest_and_transform_task = DockerOperator(
-        task_id="ingest_and_transform_job",
-        image="jupyter/pyspark-notebook:spark-3.5.0",  # The same image as our Spark cluster
-        command=spark_submit_command,
-        docker_url="unix://var/run/docker.sock",      # Connect to the Docker daemon on the host
-        network_mode=NETWORK_NAME,                   # Connect to the same network as our other services
-        auto_remove="success",                            # Clean up the container after it runs
+    print("Start to run")
+
+    ingest_and_transform_task = SparkSubmitOperator(
+        task_id="ingest_and_transform_raw_data",
+        application="/opt/airflow/scripts/ingest_raw_data.py",
+        conn_id="spark_default", # This connects to spark://spark-master:7077
+        # Pass the execution date to the Spark script
+        application_args=["--date", "{{ ds }}"],
+        conf=spark_conf,
     )

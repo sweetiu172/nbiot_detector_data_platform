@@ -22,7 +22,6 @@ x-airflow-common:
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
-    AIRFLOW_CONN_SPARK_DEFAULT: spark://spark-master:7077
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
     # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
@@ -31,8 +30,8 @@ x-airflow-common:
     
     # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
-    # _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
-    _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-apache-spark"
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    # _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-apache-spark"
     # The following line can be used to set a custom config file, stored in the local config folder
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
   volumes:
@@ -40,7 +39,8 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - /var/run/docker.sock:/var/run/docker.sock
+    - ${AIRFLOW_PROJ_DIR:-.}/scripts:/opt/airflow/scripts
+    - ./jars:/opt/spark/extra-jars
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -218,6 +218,12 @@ services:
     command:
       - -c
       - |
+        airflow connections add 'spark_default' \
+            --conn-json '{
+                "conn_type": "spark",
+                "host": "spark://spark-master",
+                "port": 7077
+            }'
         if [[ -z "${AIRFLOW_UID}" ]]; then
           echo
           echo -e "\033[1;33mWARNING!!!: AIRFLOW_UID not set!\e[0m"
@@ -454,18 +460,28 @@ services:
 #       KAFKA_CONNECT_URIS: http://debezium:8083
 
   spark-master:
-    image: jupyter/pyspark-notebook:spark-3.5.0
+    # image: jupyter/pyspark-notebook:spark-3.5.0
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
     container_name: spark_master
+    user: root
     ports:
       - "8888:8888" # Jupyter Lab UI
+      - "8080:8080"
       - "4040:4040" # Spark UI
       - "7077:7077"
     volumes:
       - ./spark-code:/home/jovyan/work
       - ./scripts:/home/jovyan/scripts
+      - ./jars:/opt/spark/extra-jars
+    command: >
+      bash -c "
+      /usr/local/spark-3.5.0-bin-hadoop3/sbin/start-master.sh && 
+      /usr/local/bin/start-notebook.sh
+      "
     environment:
       - SPARK_MASTER_HOST=spark-master
-      - SPARK_PACKAGES=io.delta:delta-spark_2.12:3.2.0,org.apache.hadoop:hadoop-aws:3.3.4
     deploy:
       resources:
         reservations:
@@ -475,14 +491,20 @@ services:
               capabilities: [gpu]
 
   spark-worker:
-    image: jupyter/pyspark-notebook:spark-3.5.0
+    # image: jupyter/pyspark-notebook:spark-3.5.0
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
     container_name: spark_worker
+    user: root
     depends_on:
       - spark-master
     command: >
-      start-worker.sh spark://spark-master:7077
+       /usr/local/spark-3.5.0-bin-hadoop3/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     environment:
       - SPARK_MASTER=spark://spark-master:7077
+    volumes:
+      - ./jars:/opt/spark/extra-jars
 
   mlflow:
     image: python:3.9-slim
