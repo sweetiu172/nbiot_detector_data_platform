@@ -2,4 +2,9 @@ apache-airflow-providers-google
 apache-airflow-providers-docker
 apache-airflow-providers-apache-spark
 pandas
+torch
+scikit-learn
+mlflow
+boto3
+s3fs
 pyarrow

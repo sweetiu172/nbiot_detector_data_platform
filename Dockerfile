@@ -1,5 +1,5 @@
 # https://airflow.apache.org/docs/docker-stack/build.html
-FROM apache/airflow:3.0.1
+FROM apache/airflow:3.0.1-python3.11
 
 # Switch to root user to install dependencies
 USER root
