@@ -1,0 +1,13 @@
+pandas
+scikit-learn
+boto3
+s3fs
+pyarrow
+lightgbm
+feast[redis]>=0.46.0
+pyspark
+delta-spark
+mlflow
+joblib
+sqlalchemy
+psycopg2-binary

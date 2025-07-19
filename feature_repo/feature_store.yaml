@@ -1,0 +1,9 @@
+project: nbiot_detector
+registry: data/registry.db
+provider: local
+offline_store:
+    type: file # Feast uses 'file' for local filesystems, including S3/MinIO via pyarrow
+    file_path: "s3a://processed/iot_botnet_data/" # Path to your processed data
+online_store:
+    type: redis
+    connection_string: "redis:6379" 

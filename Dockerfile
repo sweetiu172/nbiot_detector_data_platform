@@ -1,6 +1,10 @@
 # https://airflow.apache.org/docs/docker-stack/build.html
 FROM apache/airflow:3.0.1-python3.11
 
+# ARG AIRFLOW_VERSION=3.0.1
+# ARG PYTHON_VERSION=3.11
+# ARG CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+
 # Switch to root user to install dependencies
 USER root
 

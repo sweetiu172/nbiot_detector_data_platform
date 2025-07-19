@@ -22,6 +22,7 @@ x-airflow-common:
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
+    PYTHONPATH: /opt/airflow
     # AIRFLOW_CONN_SPARK_DEFAULT: spark://spark-master:7077
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
@@ -40,7 +41,6 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - ${AIRFLOW_PROJ_DIR:-.}/scripts:/opt/airflow/scripts
     - ./jars:/opt/spark/extra-jars
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
@@ -496,7 +496,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.spark
-    container_name: spark_worker
+    # container_name: spark_worker
     user: root
     depends_on:
       - spark-master
@@ -519,7 +519,7 @@ services:
     command: >
       bash -c "pip install mlflow boto3 psycopg2-binary &&
                mlflow server --host 0.0.0.0
-               --backend-store-uri postgresql+psycopg2://airflow:airflow@postgres/airflow
+               --backend-store-uri postgresql+psycopg2://airflow:airflow@postgres/mlflow_db
                --default-artifact-root s3://mlflow/"
     depends_on:
       - postgres

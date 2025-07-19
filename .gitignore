@@ -16,3 +16,4 @@ data/
 logs/
 generated_data/
 jars/*
+spark-code/
