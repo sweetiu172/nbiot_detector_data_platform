@@ -1,3 +1,7 @@
 apache-airflow-providers-google
 apache-airflow-providers-docker
 apache-airflow-providers-apache-spark
+lightgbm
+boto3
+s3fs
+delta-spark

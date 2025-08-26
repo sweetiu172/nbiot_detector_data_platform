@@ -1,9 +1,29 @@
 project: nbiot_detector
 registry: data/registry.db
 provider: local
+entity_key_serialization_version: 2
+
 offline_store:
-    type: file # Feast uses 'file' for local filesystems, including S3/MinIO via pyarrow
-    file_path: "s3a://processed/iot_botnet_data/" # Path to your processed data
+  type: spark
+  spark_conf:
+    spark.master: "spark://spark-master:7077"
+    spark.ui.enabled: "false"
+    spark.eventLog.enabled: "false"
+    spark.hadoop.fs.s3a.endpoint: "http://minio:9000"
+    spark.hadoop.fs.s3a.access.key: "${AWS_ACCESS_KEY_ID}"
+    spark.hadoop.fs.s3a.secret.key: "${AWS_SECRET_ACCESS_KEY}"
+    spark.sql.catalogImplementation: "hive"
+    spark.sql.parser.quotedRegexColumnNames: "true"
+    spark.sql.session.timeZone: "UTC"
+    spark.sql.execution.arrow.fallback.enabled: "true"
+    spark.hadoop.fs.s3a.impl: "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    spark.hadoop.fs.s3a.path.style.access: "true"
+    spark.jars: "/app/jars/hadoop-aws-3.3.4.jar,/app/jars/aws-java-sdk-bundle-1.12.262.jar,/app/jars/delta-spark_2.12-3.2.0.jar,/app/jars/hive-metastore-2.3.9.jar,/app/jars/delta-storage-3.2.0.jar,/app/jars/postgresql-42.5.4.jar"
+    spark.driver.extraClassPath: "/app/jars/*"
+    spark.executor.extraClassPath: "/app/jars/*"
+    spark.sql.extensions: "io.delta.sql.DeltaSparkSessionExtension"
+    spark.sql.catalog.spark_catalog: "org.apache.spark.sql.delta.catalog.DeltaCatalog"
+    spark.sql.warehouse.dir: "s3a://warehouse/spark-warehouse"
 online_store:
-    type: redis
-    connection_string: "redis:6379" 
+  type: redis
+  connection_string: "redis:6379"

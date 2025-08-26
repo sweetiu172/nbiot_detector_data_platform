@@ -1,0 +1,5 @@
+feast[spark,redis]==0.48.0
+boto3==1.37.1
+s3fs
+pyspark==3.5.0
+setuptools
