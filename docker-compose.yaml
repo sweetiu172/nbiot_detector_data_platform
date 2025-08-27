@@ -525,23 +525,23 @@ services:
     depends_on:
       - metastore_db
 
-  # mlflow:
-  #   image: python:3.9-slim
-  #   container_name: mlflow_server
-  #   ports:
-  #     - "5000:5000"
-  #   environment:
-  #     - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
-  #     - AWS_ACCESS_KEY_ID=minioadmin
-  #     - AWS_SECRET_ACCESS_KEY=minioadmin
-  #   command: >
-  #     bash -c "pip install mlflow boto3 psycopg2-binary &&
-  #              mlflow server --host 0.0.0.0
-  #              --backend-store-uri postgresql+psycopg2://airflow:airflow@postgres/mlflow_db
-  #              --default-artifact-root s3://mlflow/"
-  #   depends_on:
-  #     - postgres
-  #     - minio
+  mlflow:
+    image: python:3.9-slim
+    container_name: mlflow_server
+    ports:
+      - "5000:5000"
+    environment:
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=minio_access_key
+      - AWS_SECRET_ACCESS_KEY=minio_secret_key
+    command: >
+      bash -c "pip install mlflow boto3 psycopg2-binary &&
+               mlflow server --host 0.0.0.0
+               --backend-store-uri postgresql+psycopg2://airflow:airflow@postgres/mlflow_db
+               --default-artifact-root s3://mlflow/"
+    depends_on:
+      - postgres
+      - minio
 
 
 volumes:
