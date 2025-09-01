@@ -9,7 +9,7 @@ from pathlib import Path
 # --- 1. Download and Unzip Dataset ---
 print("Downloading N-BaIoT dataset...")
 # The dataset is hosted by the UCI Machine Learning Repository
-url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00442/N-BaIoT.zip"
+url = "https://archive.ics.uci.edu/static/public/442/detection+of+iot+botnet+attacks+n+baiot.zip"
 raw_data_dir = "../data"
 
 # Check if data is already downloaded to avoid re-downloading

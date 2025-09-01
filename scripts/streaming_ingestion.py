@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, current_timestamp
+from pyspark.sql.functions import from_json, col, current_timestamp, date_format
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 
 def run_streaming_job(spark):
@@ -19,8 +19,8 @@ def run_streaming_job(spark):
     # Read from the Kafka topic with a unique consumer group ID
     kafka_df = (spark.readStream
         .format("kafka")
-        .option("kafka.bootstrap.servers", "kafka:29092")
-        .option("subscribe", "cdc.public.iot_traffic")
+        .option("kafka.bootstrap.servers", "broker:29092")
+        .option("subscribe", "iot.public.iot_events")
         .option("kafka.group.id", "ingestion_consumer_group")
         .load())
     
@@ -32,7 +32,7 @@ def run_streaming_job(spark):
     final_df = (parsed_df
                 .withColumn("event_timestamp", current_timestamp())
                 .withColumn("created_timestamp", current_timestamp())
-                .withColumn("dt", col("event_timestamp").cast("date")))
+                .withColumn("dt", date_format(col("event_timestamp"), "yyyy-MM-dd")))
     
     output_path = "s3a://processed/iot_traffic_bronze"
     checkpoint_path = "s3a://processed/_checkpoints/ingestion_job"

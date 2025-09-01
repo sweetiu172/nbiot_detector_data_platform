@@ -1,0 +1,6 @@
+pandas
+scikit-learn
+mlflow
+joblib
+feast[redis]>=0.46.0
+pyspark==3.5.0

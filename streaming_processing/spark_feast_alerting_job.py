@@ -23,7 +23,11 @@ def enrich_and_predict_batch(batch_df, batch_id):
 
     # 1. Load Model and Feature Store
     if model is None:
-        model = mlflow.pyfunc.load_model("models:/nbiot-detector/Production")
+        # model = mlflow.pyfunc.load_model("models:/nbiot-detector/Production")
+        run_id = "4954403c3b264009af21e5772897e7a1"  #  pasting your Run ID
+        model_uri = f"runs:/{run_id}/model"
+        print(f"Loading model from experimental run: {model_uri}")
+        model = mlflow.pyfunc.load_model(model_uri)
         store = FeatureStore(repo_path="/app/feature_repo")
 
     # 2. Get device names from the micro-batch
@@ -73,14 +77,19 @@ def run_alerting_pipeline(spark):
 
     kafka_df = (spark.readStream
         .format("kafka")
-        .option("kafka.bootstrap.servers", "kafka:29092")
-        .option("subscribe", "cdc.public.iot_events")
+        .option("kafka.bootstrap.servers", "broker:29092")
+        .option("subscribe", "iot.public.iot_events")
+        .option("kafka.group.id", "alert_consumer_group")
         .load())
     
+    # parsed_df = (kafka_df
+    #              .select(from_json(col("value").cast("string"), debezium_schema).alias("data"))
+    #              .select("data.after.*", col("timestamp").alias("event_timestamp"))
+    #              .filter(col("device_name").isNotNull()))
     parsed_df = (kafka_df
-                 .select(from_json(col("value").cast("string"), debezium_schema).alias("data"))
-                 .select("data.after.*", col("timestamp").alias("event_timestamp"))
-                 .filter(col("device_name").isNotNull()))
+             .withColumn("data", from_json(col("value").cast("string"), debezium_schema))
+             .select("data.after.*", col("timestamp").alias("event_timestamp"))
+             .filter(col("device_name").isNotNull()))
     
     # This stream's only job is to write to the intermediate table
     _ = (parsed_df.writeStream
@@ -91,14 +100,14 @@ def run_alerting_pipeline(spark):
 
     # --- STREAM 2: Read from the intermediate Delta table, apply windowing, and alert ---
     
-    predicted_events_schema = StructType([
-        StructField("device_name", StringType(), True),
-        StructField("prediction", IntegerType(), True),
-        StructField("event_timestamp", TimestampType(), True)
-    ])
+    # predicted_events_schema = StructType([
+    #     StructField("device_name", StringType(), True),
+    #     StructField("prediction", IntegerType(), True),
+    #     StructField("event_timestamp", TimestampType(), True)
+    # ])
 
-    predicted_stream_df = spark.readStream.format("delta").schema(predicted_events_schema).load("s3a://processed/predicted_events")
-    
+    # predicted_stream_df = spark.readStream.format("delta").schema(predicted_events_schema).load("s3a://processed/predicted_events")
+    predicted_stream_df = spark.readStream.format("delta").load("s3a://processed/predicted_events")
     windowed_counts = (predicted_stream_df
         .withWatermark("event_timestamp", "10 minutes")
         .groupBy(
