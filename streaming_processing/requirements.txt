@@ -1,6 +1,6 @@
-pandas
-scikit-learn
-mlflow
-joblib
+pandas==2.3.2
+scikit-learn==1.7.1
+mlflow==3.3.2
+joblib==1.5.2
 feast[redis]>=0.46.0
 pyspark==3.5.0
