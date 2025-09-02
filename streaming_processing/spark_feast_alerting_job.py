@@ -80,6 +80,7 @@ def run_alerting_pipeline(spark):
         .option("kafka.bootstrap.servers", "broker:29092")
         .option("subscribe", "iot.public.iot_events")
         .option("kafka.group.id", "alert_consumer_group")
+        .option("startingOffsets", "earliest")
         .load())
     
     # parsed_df = (kafka_df
